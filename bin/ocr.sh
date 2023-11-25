@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Spinner animation
+spinner() {
+    local pid=$!
+    local delay=0.1
+    local spinstr='|/-\\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
+}
+
 # OCR Script to convert PDF to text using pdftoppm and tesseract
 
 # Function to display usage
@@ -34,19 +49,18 @@ echo -e "\e[34mCreating a temporary directory for intermediate files...\e[0m"
 
 # Convert PDF to PNG images
 echo -e "\e[34mConverting PDF to PNG images...\e[0m"
-pdftoppm -r 300 "$input" "$temp_dir/$base_name" -png &
-spinner
+pdftoppm -r 300 "$input" "$temp_dir/$base_name" -png
 echo -e "\e[32mConversion to PNG completed.\e[0m"
 
 # Perform OCR on the PNG images and output to text files
 echo "Performing OCR on PNG images..."
-find "$temp_dir" -name "${base_name}*.png" -exec tesseract {} {}.txt \; &
-spinner
+find "$temp_dir" -name "${base_name}*.png" -exec tesseract {} {}.txt \;
 echo "OCR process completed for all images."
 
 # Concatenate all text files into one final output
 echo "Concatenating text files into one final output..."
-cat "$temp_dir/${base_name}"*.txt > "${base_name}_ocr.txt"
+input_dir=$(dirname "$input")
+cat "$temp_dir/${base_name}"*.txt > "$input_dir/${base_name}_ocr.txt"
 echo -e "\e[32mConcatenation completed.\e[0m"
 
 # Clean up the intermediate image and text files
@@ -55,21 +69,7 @@ rm -r "$temp_dir"
 echo -e "\e[32mCleanup completed.\e[0m"
 
 # Notify the user of completion
-echo "OCR process completed. The text is available in final_output.txt"
-# Spinner animation
-spinner() {
-    local pid=$!
-    local delay=0.1
-    local spinstr='|/-\'
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
+echo "OCR process completed. The text is available in $input_dir/${base_name}_ocr.txt"
 
 # Example usage of spinner:
 # long_running_command &
